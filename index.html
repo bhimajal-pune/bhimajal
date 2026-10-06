@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login चाचणी — भीमा जलसाठा</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b2430; --muted:#5b6675; --line:#d9dee5;
+          --accent:#1f5fa8; --ok:#1e7a3c; --bad:#b3261e; --warn:#8a5a00; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:"Noto Sans Devanagari","Mukta",system-ui,sans-serif; font-size:16px; line-height:1.5; }
+  header { background:var(--accent); color:#fff; padding:16px; }
+  header h1 { margin:0; font-size:19px; }
+  header p { margin:4px 0 0; font-size:13px; opacity:.9; }
+  main { max-width:640px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+  .card h2 { margin:0 0 8px; font-size:16px; }
+  .demo { display:inline-block; background:#fff4d6; color:var(--warn); border:1px solid #e8c879;
+          border-radius:6px; padding:2px 8px; font-size:12px; font-weight:600; }
+  button { min-height:48px; padding:10px 16px; border-radius:8px; border:1px solid var(--accent);
+           background:var(--accent); color:#fff; font-size:15px; font-family:inherit; cursor:pointer; width:100%; margin-top:8px; }
+  button.secondary { background:#fff; color:var(--accent); }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button:focus-visible, select:focus-visible, input:focus-visible { outline:3px solid #f2a900; outline-offset:2px; }
+  label { display:block; font-size:14px; color:var(--muted); margin-top:10px; }
+  select, input { width:100%; min-height:48px; padding:10px; font-size:16px; border:1px solid var(--line);
+                  border-radius:8px; font-family:inherit; background:#fff; }
+  .msg { margin-top:10px; padding:10px 12px; border-radius:8px; font-size:14px; white-space:pre-wrap; display:none; }
+  .msg.ok { display:block; background:#e8f5ec; color:var(--ok); border:1px solid #b7dcc3; }
+  .msg.bad { display:block; background:#fdecea; color:var(--bad); border:1px solid #f1b9b4; }
+  .msg.info { display:block; background:#eef3fa; color:var(--accent); border:1px solid #c6d6ec; }
+  #who { font-size:14px; color:var(--muted); }
+  #gbtn { margin-top:8px; min-height:44px; }
+  /* ===== Branding badge (CONFIG.SHOW_BRANDING ने on/off) ===== */
+  body { min-height:100vh; display:flex; flex-direction:column; }
+  main { flex:1; width:100%; }
+  .brand { text-align:center; padding:12px 16px 18px; color:var(--muted); opacity:.62;
+           letter-spacing:.2px; user-select:none; transition:opacity .2s; }
+  .brand:hover { opacity:.95; }
+  .brand .by { font-size:10.5px; font-weight:400; }
+  .brand .name { font-size:12px; font-weight:600; margin-left:3px; }
+  .brand[hidden] { display:none; }
+  @media print { .brand { opacity:.8; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>भीमा जलसाठा नियोजन — Login चाचणी</h1>
+  <p>Authentication Proof v0.1 · हा production portal नाही</p>
+</header>
+<main>
+  <div class="card">
+    <h2>१. Server चालू आहे का? (login नाही)</h2>
+    <button id="btnPing" class="secondary">Server तपासा</button>
+    <div id="msgPing" class="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>२. Google ने login करा</h2>
+    <div id="gbtn"></div>
+    <div id="who">अद्याप login केलेले नाही.</div>
+    <button id="btnWho" disabled>मी कोण आहे? (server कडून तपासा)</button>
+    <button id="btnLogout" class="secondary" disabled>Logout</button>
+    <div id="msgWho" class="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>३. Test नोंद <span class="demo">DEMO</span></h2>
+    <label for="proj">प्रकल्प</label>
+    <select id="proj">
+      <option value="NIRA_BHATGHAR">भाटघर (NIRA_BHATGHAR)</option>
+      <option value="NIRA_VEER">वीर (NIRA_VEER)</option>
+      <option value="NIRA_NDG">नीरा देवघर (NIRA_NDG)</option>
+      <option value="NIRA_GUNJAWANI">गुंजवणी (NIRA_GUNJAWANI)</option>
+      <option value="NIRA_NLBC">नीरा डावा कालवा (NIRA_NLBC)</option>
+      <option value="NIRA_NRBC">नीरा उजवा कालवा (NIRA_NRBC)</option>
+    </select>
+    <label for="val">मूल्य (MCM)</label>
+    <input id="val" type="number" inputmode="decimal" min="0" step="0.01" placeholder="उदा. 12.50">
+    <button id="btnWrite" disabled>Test नोंद जतन करा</button>
+    <div id="msgWrite" class="msg" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="card">
+    <h2>४. सुरक्षा चाचणी</h2>
+    <p style="margin:0;font-size:14px;color:var(--muted)">बनावट login पाठवल्यावर server ने नाकारले पाहिजे.</p>
+    <button id="btnFake" class="secondary">बनावट login पाठवा</button>
+    <div id="msgFake" class="msg" role="status" aria-live="polite"></div>
+  </div>
+</main>
+
+<footer id="brand" class="brand" aria-label="Powered by CiViLSENSE.ai" hidden>
+  <span class="by">Powered by</span><span class="name">© CiViLSENSE.ai</span>
+</footer>
+
+<script>
+  // ===== CONFIG: deploy करताना फक्त हे दोन बदला =====
+  const CLIENT_ID = '880594370407-fs4crtc4mfkso2otj6ma5lurjqghtef9.apps.googleusercontent.com';
+  const API_URL   = 'https://script.google.com/macros/s/AKfycby_rzYFHIEx_gGRDoNAOPZF2-slF8_wAzatGmokDf9eDLRqh56B74ytO1NGi8HspTaj/exec';
+  const SHOW_BRANDING = true;   // false केल्यास "Powered by © CiViLSENSE.ai" लपेल
+  // ===================================================
+  document.getElementById('brand').hidden = !SHOW_BRANDING;
+
+  let idToken = null;               // फक्त memory मध्ये; browser storage मध्ये ठेवत नाही
+  const $ = id => document.getElementById(id);
+
+  function show(id, kind, text) { const el = $(id); el.className = 'msg ' + kind; el.textContent = text; }
+
+  function setLoggedIn(on, email) {
+    $('btnWho').disabled = !on; $('btnWrite').disabled = !on; $('btnLogout').disabled = !on;
+    $('who').textContent = on ? ('Google login: ' + email + ' (server तपासणी बाकी)') : 'अद्याप login केलेले नाही.';
+  }
+
+  function decodeEmail(token) {
+    // फक्त दाखवण्यासाठी. खरी तपासणी server वर होते.
+    try {
+      const p = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return JSON.parse(decodeURIComponent(escape(atob(p)))).email || '';
+    } catch (e) { return ''; }
+  }
+
+  async function call(method, body) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const opt = method === 'GET' ? { method: 'GET', signal: ctrl.signal }
+        : { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(body) };
+      const url = method === 'GET' ? API_URL + '?action=' + encodeURIComponent(body) : API_URL;
+      const res = await fetch(url, opt);
+      if (!res.ok) return { ok: false, message: 'Server प्रतिसाद: HTTP ' + res.status };
+      return await res.json();
+    } catch (e) {
+      return { ok: false, message: e.name === 'AbortError'
+        ? 'Server ने 30 सेकंदांत उत्तर दिले नाही. पुन्हा प्रयत्न करा.'
+        : 'जोडणी होऊ शकली नाही. Internet व API_URL तपासा.' };
+    } finally { clearTimeout(t); }
+  }
+
+  function busy(btn, on, label) { btn.disabled = on; if (label) btn.textContent = label; }
+
+  $('btnPing').onclick = async () => {
+    busy($('btnPing'), true, 'तपासत आहे…');
+    const r = await call('GET', 'ping');
+    show('msgPing', r.ok ? 'ok' : 'bad', r.ok ? ('✓ Server चालू आहे. वेळ: ' + r.server_time_ist) : ('✗ ' + r.message));
+    busy($('btnPing'), false, 'Server तपासा');
+  };
+
+  $('btnWho').onclick = async () => {
+    busy($('btnWho'), true, 'तपासत आहे…');
+    const r = await call('POST', { idToken, action: 'whoami' });
+    show('msgWho', r.ok ? 'ok' : 'bad', r.ok
+      ? ('✓ अधिकृत user\nEmail: ' + r.email + '\nकार्यालय: ' + r.office_name + ' (' + r.office_id + ')\nRole: ' + r.role + '\nप्रकल्प: ' + r.projects.join(', '))
+      : ('✗ ' + r.message + (r.code ? '  [' + r.code + ']' : '')));
+    busy($('btnWho'), false, 'मी कोण आहे? (server कडून तपासा)');
+  };
+
+  $('btnWrite').onclick = async () => {
+    const v = $('val').value.trim();
+    if (v === '') { show('msgWrite', 'bad', '✗ मूल्य भरा (MCM).'); $('val').focus(); return; }
+    busy($('btnWrite'), true, 'जतन करत आहे…');
+    const r = await call('POST', { idToken, action: 'writeTest', projectId: $('proj').value, value: v });
+    show('msgWrite', r.ok ? 'ok' : 'bad', r.ok ? ('✓ ' + r.message + '\nRecord ID: ' + r.record_id)
+      : ('✗ ' + r.message + (r.code ? '  [' + r.code + ']' : '')));
+    busy($('btnWrite'), false, 'Test नोंद जतन करा');
+  };
+
+  $('btnFake').onclick = async () => {
+    busy($('btnFake'), true, 'पाठवत आहे…');
+    const fake = 'eyJhbGciOiJSUzI1NiJ9.eyJlbWFpbCI6ImZha2VAZXhhbXBsZS5jb20ifQ.invalid';
+    const r = await call('POST', { idToken: fake, action: 'writeTest', projectId: 'NIRA_VEER', value: 1 });
+    show('msgFake', r.ok ? 'bad' : 'ok', r.ok
+      ? '✗ धोका: बनावट login स्वीकारला गेला! Deployment थांबवा.'
+      : ('✓ अपेक्षेप्रमाणे नाकारले: ' + r.message));
+    busy($('btnFake'), false, 'बनावट login पाठवा');
+  };
+
+  $('btnLogout').onclick = () => {
+    idToken = null;
+    if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
+    setLoggedIn(false);
+    show('msgWho', 'info', 'Logout झाले.');
+  };
+
+  window.onload = () => {
+    if (CLIENT_ID.startsWith('PASTE_') || API_URL.startsWith('PASTE_')) {
+      show('msgPing', 'bad', '✗ index.html मध्ये CLIENT_ID व API_URL भरलेले नाहीत.');
+      return;
+    }
+    const init = () => {
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: (resp) => { idToken = resp.credential; setLoggedIn(true, decodeEmail(idToken)); }
+      });
+      google.accounts.id.renderButton($('gbtn'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'mr' });
+    };
+    if (window.google && google.accounts) init();
+    else {
+      let tries = 0;
+      const iv = setInterval(() => {
+        if (window.google && google.accounts) { clearInterval(iv); init(); }
+        else if (++tries > 50) { clearInterval(iv); show('msgWho', 'bad', '✗ Google login script load झाली नाही. Internet तपासा.'); }
+      }, 200);
+    }
+  };
+</script>
+</body>
+</html>
